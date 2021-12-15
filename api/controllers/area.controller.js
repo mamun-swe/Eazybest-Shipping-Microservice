@@ -5,11 +5,19 @@ const Validator = require("../validators/area.validator")
 const { isMongooseId } = require("../middleware/mongooseId.middleware")
 const { PaginateQueryParams, Paginate } = require("../helpers/paginate.helper")
 
-
 // List of items
 const Index = async (req, res, next) => {
     try {
+        const { query } = req.query
         const { limit, page } = PaginateQueryParams(req.query)
+
+        if (query) {
+            const searchResults = await Search(query)
+            return res.status(200).json({
+                status: true,
+                data: searchResults
+            })
+        }
 
         const totalItems = await Area.countDocuments().exec()
         const results = await Area.find({},
@@ -73,6 +81,7 @@ const Store = async (req, res, next) => {
             created_by
         })
 
+        await District.findByIdAndUpdate(district, { $push: { areas: newArea._id } })
         await newArea.save()
 
         res.status(201).json({
@@ -83,7 +92,6 @@ const Store = async (req, res, next) => {
         if (error) next(error)
     }
 }
-
 
 // Show specific item
 const Show = async (req, res, next) => {
@@ -117,8 +125,6 @@ const Update = async (req, res, next) => {
             district
         } = req.body
 
-        await isMongooseId(id)
-
         // Validate check
         const validate = await Validator.Store(req.body)
         if (!validate.isValid) {
@@ -127,6 +133,8 @@ const Update = async (req, res, next) => {
                 message: validate.error
             })
         }
+
+        await isMongooseId(id)
 
         const isAvailable = await Area.findById(id)
         if (!isAvailable) {
@@ -144,6 +152,19 @@ const Update = async (req, res, next) => {
             })
         }
 
+        // remove from district areas
+        const removeFromDistrict = await District.findByIdAndUpdate(
+            isAvailable.district,
+            { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
+        )
+
+        if (!removeFromDistrict) {
+            return res.status(500).json({
+                status: false,
+                message: "Something going wrong."
+            })
+        }
+
         await Area.findByIdAndUpdate(id,
             {
                 $set: {
@@ -157,6 +178,9 @@ const Update = async (req, res, next) => {
             },
             { new: true }
         )
+
+        // add to district areas
+        await District.findByIdAndUpdate(district, { $push: { areas: isAvailable._id } })
 
         res.status(200).json({
             status: true,
@@ -183,9 +207,10 @@ const Delete = async (req, res, next) => {
         }
 
         // Remove form district
-        const isRemovedFromDistrict = await District.findByIdAndUpdate(id, {
-            $pull: { "areas": { "$in": [new ObjectId(id)] } }
-        })
+        await District.findByIdAndUpdate(
+            isAvailable.district,
+            { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
+        )
 
         await Area.findByIdAndDelete(id)
 
@@ -195,6 +220,31 @@ const Delete = async (req, res, next) => {
         })
     } catch (error) {
         if (error) next(error)
+    }
+}
+
+// Search items
+const Search = async (query) => {
+    try {
+        const queryValue = new RegExp(query, 'i')
+        const results = await Area.find(
+            {
+                $or: [
+                    { upazila: queryValue },
+                    { upazila_bn_name: queryValue },
+                    { post_office: queryValue },
+                    { post_office_bn_name: queryValue },
+                    { post_code: queryValue }
+                ]
+            },
+            { district: 0, created_by: 0 }
+        )
+            .sort({ _id: -1 })
+            .exec()
+
+        return results
+    } catch (error) {
+        if (error) return []
     }
 }
 

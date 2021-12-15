@@ -9,7 +9,16 @@ const { PaginateQueryParams, Paginate } = require("../helpers/paginate.helper")
 const Index = async (req, res, next) => {
     try {
         const items = []
+        const { query } = req.query
         const { limit, page } = PaginateQueryParams(req.query)
+
+        if (query) {
+            const searchResults = await Search(query)
+            return res.status(200).json({
+                status: true,
+                data: searchResults
+            })
+        }
 
         const totalItems = await District.countDocuments().exec()
         const results = await District.find({}, { created_by: 0 })
@@ -176,6 +185,41 @@ const Delete = async (req, res, next) => {
     }
 }
 
+// Search items
+const Search = async (query) => {
+    try {
+        const items = []
+
+        const queryValue = new RegExp(query, 'i')
+        const results = await District.find(
+            {
+                $or: [
+                    { name: queryValue },
+                    { bn_name: queryValue }
+                ]
+            },
+            { created_by: 0 }
+        )
+            .sort({ _id: -1 })
+            .exec()
+
+        if (results && results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i]
+                items.push({
+                    _id: element._id,
+                    name: element.name,
+                    bn_name: element.bn_name,
+                    is_deleteable: element.areas.length > 0 ? false : true
+                })
+            }
+        }
+
+        return items
+    } catch (error) {
+        if (error) return []
+    }
+}
 
 module.exports = {
     Index,
