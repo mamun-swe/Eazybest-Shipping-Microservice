@@ -38,7 +38,7 @@ const Paginate = (data) => {
 
     const pageTotal = Math.ceil(totalItems / limit)
     return {
-        items: totalItems,
+        total_items: totalItems,
         limit: limit,
         current_page: page,
         total_page: pageTotal,
