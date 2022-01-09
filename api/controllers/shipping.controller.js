@@ -1,6 +1,7 @@
 
 const Shipping = require("../../models/shipping.model")
-const Validator = require("../validators/shipping.validator")
+const validator = require("../validators/shipping.validator")
+const { RedisClient } = require("../cache")
 const { isMongooseId } = require("../middleware/mongooseId.middleware")
 const { PaginateQueryParams, Paginate } = require("../helpers/paginate.helper")
 const { GetHourMinute, FormatDateWithAMPM } = require("../helpers/index.helper")
@@ -26,6 +27,7 @@ const Index = async (req, res, next) => {
         const totalItems = await Shipping.countDocuments().exec()
         const results = await Shipping.find({},
             {
+                title: 1,
                 assign_to: 1,
                 start_from: 1,
                 end_to: 1,
@@ -44,6 +46,7 @@ const Index = async (req, res, next) => {
                 const element = results[i]
                 items.push({
                     _id: element._id,
+                    title: element.title,
                     assign_to: element.assign_to,
                     start_from: FormatDateWithAMPM(element.start_from),
                     end_to: FormatDateWithAMPM(element.end_to),
@@ -69,6 +72,7 @@ const Store = async (req, res, next) => {
     try {
         const created_by = req.user.id
         const {
+            title,
             start_from,
             end_to,
             start_time,
@@ -78,12 +82,14 @@ const Store = async (req, res, next) => {
             assign_to,
             min_order_amount,
             max_order_amount,
+            min_quantity,
+            max_quantity,
             area,
             assign_items
         } = req.body
 
         // Validate check
-        const validate = await Validator.Store(req.body)
+        const validate = await validator.store(req.body)
         if (!validate.isValid) {
             return res.status(422).json({
                 status: false,
@@ -92,6 +98,15 @@ const Store = async (req, res, next) => {
         }
 
         await isMongooseId(area)
+
+        /* Check title alrady available */
+        const is_available = await Shipping.findOne({ title })
+        if (is_available) {
+            return res.status(408).json({
+                status: false,
+                message: "Shipping title already available."
+            })
+        }
 
         if (assign_items && assign_items.length > 0) {
             for (let i = 0; i < assign_items.length; i++) {
@@ -112,6 +127,7 @@ const Store = async (req, res, next) => {
         if (assign_to === "Customer") assignedItems.customers = assign_items
 
         const newShipping = new Shipping({
+            title,
             start_from,
             end_to,
             start_time: await GetHourMinute(start_time),
@@ -121,6 +137,8 @@ const Store = async (req, res, next) => {
             assign_to,
             min_order_amount,
             max_order_amount,
+            min_quantity,
+            max_quantity,
             area,
             created_by,
             ...assignedItems
@@ -128,6 +146,7 @@ const Store = async (req, res, next) => {
 
         // Save shipping
         await newShipping.save()
+        await RedisClient.flushdb()
 
         res.status(201).json({
             status: true,
@@ -170,6 +189,7 @@ const Show = async (req, res, next) => {
             if (result.assign_to === "Customer") assigned_items = result.customers
 
             item._id = result._id
+            item.title = result.title
             item.assign_to = result.assign_to
             item.assigned_items = assigned_items
             item.start_from = FormatDateWithAMPM(result.start_from)
@@ -180,6 +200,8 @@ const Show = async (req, res, next) => {
             item.discount_amount = result.discount_amount
             item.min_order_amount = result.min_order_amount
             item.max_order_amount = result.max_order_amount
+            item.min_quantity = result.min_quantity
+            item.max_quantity = result.max_quantity
             item.area = result.area
             item.created_by = result.created_by
             item.created_at = FormatDateWithAMPM(result.createdAt)
@@ -200,6 +222,7 @@ const Update = async (req, res, next) => {
     try {
         const { id } = req.params
         const {
+            title,
             start_from,
             end_to,
             start_time,
@@ -209,12 +232,14 @@ const Update = async (req, res, next) => {
             assign_to,
             min_order_amount,
             max_order_amount,
+            min_quantity,
+            max_quantity,
             area,
             assign_items
         } = req.body
 
         // Validate check
-        const validate = await Validator.Store(req.body)
+        const validate = await validator.store(req.body)
         if (!validate.isValid) {
             return res.status(422).json({
                 status: false,
@@ -223,6 +248,15 @@ const Update = async (req, res, next) => {
         }
 
         await isMongooseId(id)
+
+        /* Check title alrady available */
+        const is_available_title = await Shipping.findOne({ $and: [{ _id: { $ne: id } }, { title }] })
+        if (is_available_title) {
+            return res.status(408).json({
+                status: false,
+                message: "Shipping title already available."
+            })
+        }
 
         let new_items = {
             brands: null,
@@ -254,6 +288,7 @@ const Update = async (req, res, next) => {
         // Update shipping
         await Shipping.findByIdAndUpdate(id, {
             $set: {
+                title,
                 start_from,
                 end_to,
                 start_time: await GetHourMinute(start_time),
@@ -263,10 +298,13 @@ const Update = async (req, res, next) => {
                 assign_to,
                 min_order_amount,
                 max_order_amount,
+                min_quantity,
+                max_quantity,
                 area,
                 ...new_items
             }
         }).exec()
+        await RedisClient.flushdb()
 
         res.status(201).json({
             status: true,
@@ -292,6 +330,7 @@ const Delete = async (req, res, next) => {
         }
 
         await Shipping.findByIdAndDelete(id)
+        await RedisClient.flushdb()
 
         res.status(200).json({
             status: true,
@@ -330,6 +369,7 @@ const FilterByQueryParams = async (queryParams) => {
         const results = await Shipping.find(
             { $and: [{ ...query_obj }] },
             {
+                title: 1,
                 assign_to: 1,
                 start_from: 1,
                 end_to: 1,
@@ -346,6 +386,7 @@ const FilterByQueryParams = async (queryParams) => {
                 const element = results[i]
                 items.push({
                     _id: element._id,
+                    title: element.title,
                     assign_to: element.assign_to,
                     start_from: FormatDateWithAMPM(element.start_from),
                     end_to: FormatDateWithAMPM(element.end_to),

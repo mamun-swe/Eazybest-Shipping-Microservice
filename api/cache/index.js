@@ -3,9 +3,9 @@ const REDIS_PORT = process.env.REDIS_PORT
 const RedisClient = redis.createClient(REDIS_PORT)
 
 // Area cache
-const Area = async (req, res, next) => {
+const AreaCache = async (req, res, next) => {
     try {
-        const key = 'banners'
+        const key = "district-list"
         RedisClient.get(key, (error, results) => {
             if (results) {
                 return res.status(200).json({
@@ -19,4 +19,10 @@ const Area = async (req, res, next) => {
     } catch (error) {
         if (error) next(error)
     }
+}
+
+
+module.exports = {
+    RedisClient,
+    AreaCache
 }

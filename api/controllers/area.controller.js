@@ -2,6 +2,7 @@ const ObjectId = require("mongoose").Types.ObjectId
 const Area = require("../../models/area.model")
 const District = require("../../models/district.model")
 const Validator = require("../validators/area.validator")
+const { RedisClient } = require("../cache")
 const { isMongooseId } = require("../middleware/mongooseId.middleware")
 const { PaginateQueryParams, Paginate } = require("../helpers/paginate.helper")
 
@@ -83,6 +84,7 @@ const Store = async (req, res, next) => {
 
         await District.findByIdAndUpdate(district, { $push: { areas: newArea._id } })
         await newArea.save()
+        await RedisClient.flushdb()
 
         res.status(201).json({
             status: true,
@@ -181,6 +183,7 @@ const Update = async (req, res, next) => {
 
         // add to district areas
         await District.findByIdAndUpdate(district, { $push: { areas: isAvailable._id } })
+        await RedisClient.flushdb()
 
         res.status(200).json({
             status: true,
@@ -213,6 +216,7 @@ const Delete = async (req, res, next) => {
         )
 
         await Area.findByIdAndDelete(id)
+        await RedisClient.flushdb()
 
         res.status(200).json({
             status: true,

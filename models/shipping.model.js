@@ -1,6 +1,12 @@
 const { Schema, model } = require("mongoose")
 
 const shippingSchema = new Schema({
+    title: {
+        type: String,
+        trim: true,
+        required: true,
+        unique: true
+    },
     start_from: {
         type: Date,
         trim: true,
@@ -55,12 +61,22 @@ const shippingSchema = new Schema({
     min_order_amount: {
         type: Number,
         trim: true,
-        default: 0
+        required: true
     },
     max_order_amount: {
         type: Number,
         trim: true,
-        default: 0
+        required: true
+    },
+    min_quantity: {
+        type: Number,
+        trim: true,
+        required: true
+    },
+    max_quantity: {
+        type: Number,
+        trim: true,
+        required: true
     },
     area: {
         type: Schema.Types.ObjectId,

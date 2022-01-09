@@ -1,11 +1,11 @@
 const express = require("express")
 const router = express.Router()
 const Permission = require("../middleware/permission.middleware")
-const { ListRouter } = require("./list.route")
 const { AdminRouter } = require("./admin.route")
+const { CustomerRouter } = require("./customer.route")
 
 // Admin routes
-router.use("/list", ListRouter)
 router.use("/admin", Permission.Admin, AdminRouter)
+router.use("/customer", CustomerRouter)
 
 module.exports = router
