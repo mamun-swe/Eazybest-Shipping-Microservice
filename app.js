@@ -9,6 +9,11 @@ const compression = require("compression")
 const cluster = require("cluster")
 const process = require("process")
 const { cpus } = require("os")
+
+const grpc = require("grpc")
+const protoLoader = require("@grpc/proto-loader")
+const PROTO_PATH = "./shipping.proto"
+
 require("dotenv").config()
 
 const numCPUs = cpus().length
@@ -35,6 +40,26 @@ if (cluster.isMaster) {
     app.use(nocache())
 
     app.use("/api/shipping/v1", route)
+
+    // // grpc intigration
+    // const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    //     keepCase: true,
+    //     longs: String,
+    //     enums: String,
+    //     arrays: true
+    // })
+
+    // const shippingProto = grpc.loadPackageDefinition(packageDefinition)
+    // const grpcServer = new grpc.Server()
+
+    // grpcServer.addService(shippingProto.DistrictService.service, {
+    //     getAll: (_, callback) => {
+    //         callback(null, { districts })
+    //     }
+    // })
+    
+
+    // const grpcClient = grpcServer.bind("127.0.0.1:5001", grpc.ServerCredentials.createInsecure())
 
     app.get('/', (req, res) => {
         res.send("WOW! Shipping Microservice. 😛😛😛")
@@ -81,3 +106,5 @@ if (cluster.isMaster) {
         console.log(`App running on ${port} port`)
     })
 }
+
+// https://itnext.io/effectively-communicate-between-microservices-de7252ba2f3c
