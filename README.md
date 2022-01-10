@@ -1,6 +1,6 @@
 # Eazybest-shipping-microservice
 
-![ScreenShot](/banner.jpg)
+![ScreenShot](/assets/banner.jpg)
 
 Microservice for eazybest shipping module.
 
