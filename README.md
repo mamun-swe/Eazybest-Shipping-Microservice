@@ -1,4 +1,4 @@
-# Eazybest-Shipping-Microservice
+# Eazybest-shipping-microservice
 Microservice for eazybest shipping module.
 
 ### API Documentation
