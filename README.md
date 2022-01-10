@@ -1,4 +1,7 @@
 # Eazybest-shipping-microservice
+
+![ScreenShot](/logo.png)
+
 Microservice for eazybest shipping module.
 
 ### API Documentation
