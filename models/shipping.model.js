@@ -18,28 +18,14 @@ const shippingSchema = new Schema({
         required: true
     },
     start_time: {
-        hour: {
-            type: Number,
-            trim: true,
-            required: true
-        },
-        minute: {
-            type: Number,
-            trim: true,
-            required: true
-        }
+        type: Date,
+        trim: true,
+        required: true
     },
     end_time: {
-        hour: {
-            type: Number,
-            trim: true,
-            required: true
-        },
-        minute: {
-            type: Number,
-            trim: true,
-            required: true
-        }
+        type: Date,
+        trim: true,
+        required: true
     },
     discount_type: {
         type: String,

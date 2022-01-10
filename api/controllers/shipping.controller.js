@@ -9,7 +9,6 @@ const { GetHourMinute, FormatDateWithAMPM } = require("../helpers/index.helper")
 // List of items
 const Index = async (req, res, next) => {
     try {
-        const items = []
         let params = { ...req.query }
         const { limit, page } = PaginateQueryParams(req.query)
 
@@ -41,25 +40,9 @@ const Index = async (req, res, next) => {
             .limit(parseInt(limit))
             .exec()
 
-        if (results && results.length > 0) {
-            for (let i = 0; i < results.length; i++) {
-                const element = results[i]
-                items.push({
-                    _id: element._id,
-                    title: element.title,
-                    assign_to: element.assign_to,
-                    start_from: FormatDateWithAMPM(element.start_from),
-                    end_to: FormatDateWithAMPM(element.end_to),
-                    start_time: element.start_time,
-                    end_time: element.end_time,
-                    discount_type: element.discount_type
-                })
-            }
-        }
-
         res.status(200).json({
             status: true,
-            data: items,
+            data: results,
             pagination: Paginate({ page, limit, totalItems })
         })
     } catch (error) {
@@ -99,6 +82,12 @@ const Store = async (req, res, next) => {
 
         await isMongooseId(area)
 
+        let today_start_time = new Date(start_from)
+        let today_end_time = new Date(end_to)
+
+        today_start_time.setUTCHours(GetHourMinute(start_time).hour, GetHourMinute(start_time).minute, 0, 0)
+        today_end_time.setUTCHours(GetHourMinute(end_time).hour, GetHourMinute(end_time).minute, 0, 0)
+
         /* Check title alrady available */
         const is_available = await Shipping.findOne({ title })
         if (is_available) {
@@ -130,8 +119,8 @@ const Store = async (req, res, next) => {
             title,
             start_from,
             end_to,
-            start_time: await GetHourMinute(start_time),
-            end_time: await GetHourMinute(end_time),
+            start_time: today_start_time,
+            end_time: today_end_time,
             discount_type,
             discount_amount,
             assign_to,
@@ -192,8 +181,8 @@ const Show = async (req, res, next) => {
             item.title = result.title
             item.assign_to = result.assign_to
             item.assigned_items = assigned_items
-            item.start_from = FormatDateWithAMPM(result.start_from)
-            item.end_to = FormatDateWithAMPM(result.end_to)
+            item.start_from = result.start_from
+            item.end_to = result.end_to
             item.start_time = result.start_time
             item.end_time = result.end_time
             item.discount_type = result.discount_type
@@ -249,6 +238,12 @@ const Update = async (req, res, next) => {
 
         await isMongooseId(id)
 
+        let today_start_time = new Date(start_from)
+        let today_end_time = new Date(end_to)
+
+        today_start_time.setUTCHours(GetHourMinute(start_time).hour, GetHourMinute(start_time).minute, 0, 0)
+        today_end_time.setUTCHours(GetHourMinute(end_time).hour, GetHourMinute(end_time).minute, 0, 0)
+
         /* Check title alrady available */
         const is_available_title = await Shipping.findOne({ $and: [{ _id: { $ne: id } }, { title }] })
         if (is_available_title) {
@@ -291,8 +286,8 @@ const Update = async (req, res, next) => {
                 title,
                 start_from,
                 end_to,
-                start_time: await GetHourMinute(start_time),
-                end_time: await GetHourMinute(end_time),
+                start_time: today_start_time,
+                end_time: today_end_time,
                 discount_type,
                 discount_amount,
                 assign_to,

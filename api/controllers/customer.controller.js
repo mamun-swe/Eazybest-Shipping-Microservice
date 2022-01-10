@@ -42,10 +42,10 @@ const matchShipping = async (req, res, next) => {
         const shipping_charges_items = []
 
         let today = new Date()
-        today.setUTCHours(0, 0, 0, 0)
+        let current_time = new Date()
 
-        // const currentHour = new Date().getHours()
-        // const currentMinute = new Date().getMinutes()
+        today.setUTCHours(0, 0, 0, 0)
+        current_time.setUTCHours(current_time.getHours(), current_time.getMinutes(), 0, 0)
 
         for (let i = 0; i < items.length; i++) {
             const element = items[i]
@@ -96,19 +96,24 @@ const matchShipping = async (req, res, next) => {
                     { "min_order_amount": { "$lte": parseInt(element.total_amount) } },
                     { "max_order_amount": { "$gte": parseInt(element.total_amount) } },
                     { "start_from": { "$lte": new Date(today) } },
-                    { "end_to": { "$gte": new Date(today) } },
-
-                    // { "start_time.hour": { "$lte": currentHour } },
-                    // { "start_time.minute": { "$lte": currentMinute } },
-                    // { "end_time.hour": { "$gte": currentHour } },
-                    // { "end_time.minute": { "$gte": currentMinute } },
+                    { "end_to": { "$gte": new Date(today) } }
                 ]
             })
                 .populate("area")
                 .exec()
 
+            let is_matched_flag = false
             let calculated_shipping_charge = 0
-            if (shipping_info && shipping_info.area && shipping_info.area.post_code === post_code) {
+
+            /* Match with expired time */
+            if (shipping_info) {
+                const core_start_time = new Date(shipping_info.start_time.setUTCHours(shipping_info.start_time.getHours()))
+                const core_end_time = new Date(shipping_info.end_time.setUTCHours(shipping_info.end_time.getHours()))
+
+                if (core_start_time <= new Date(current_time) && core_end_time >= new Date(current_time)) is_matched_flag = true
+            }
+
+            if (is_matched_flag && shipping_info && shipping_info.area && shipping_info.area.post_code === post_code) {
 
                 /* Calculate flat amount */
                 if (shipping_info.discount_type === "Flat") {
