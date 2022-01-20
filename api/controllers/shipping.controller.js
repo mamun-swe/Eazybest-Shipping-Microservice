@@ -264,13 +264,13 @@ const Update = async (req, res, next) => {
         }
 
         if (assign_to === "Anything") new_items = new_items
-        if (assign_to === "Brand") new_items.brands = assign_items
-        if (assign_to === "Category") new_items.categories = assign_items
-        if (assign_to === "Sub-category") new_items.sub_categories = assign_items
-        if (assign_to === "Leaf-category") new_items.leaf_categories = assign_items
-        if (assign_to === "Vendor") new_items.vendors = assign_items
-        if (assign_to === "Product") new_items.products = assign_items
-        if (assign_to === "Customer") new_items.customers = assign_items
+        if (assign_to === "Brand") new_items.brands = JSON.parse(assign_items)
+        if (assign_to === "Category") new_items.categories = JSON.parse(assign_items)
+        if (assign_to === "Sub-category") new_items.sub_categories = JSON.parse(assign_items)
+        if (assign_to === "Leaf-category") new_items.leaf_categories = JSON.parse(assign_items)
+        if (assign_to === "Vendor") new_items.vendors = JSON.parse(assign_items)
+        if (assign_to === "Product") new_items.products = JSON.parse(assign_items)
+        if (assign_to === "Customer") new_items.customers = JSON.parse(assign_items)
 
         const is_available = await Shipping.findById(id)
         if (!is_available) {
