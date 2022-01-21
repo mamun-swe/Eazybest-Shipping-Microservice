@@ -15,7 +15,6 @@ const store = data => {
     if (data.discount_type && !['Flat', 'Percentage'].find(item => item === data.discount_type)) error.discount_type = `${data.discount_type} is not valid`
 
     if (!data.discount_amount || isEmpty(data.discount_amount)) error.discount_amount = "Discount amount is required"
-    if (data.discount_amount && typeof data.discount_amount !== "number") error.discount_amount = "Amount must be in number"
     if (!data.area || isEmpty(data.area)) error.area = "Area is required."
 
     if (!data.min_order_amount || isEmpty(data.min_order_amount)) error.min_order_amount = "Minimum order amount is required."
