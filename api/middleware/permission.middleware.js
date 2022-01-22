@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken")
 // const { RouteGroupName } = require("../helpers/index.helper")
 
 // Admin Permission
-const Admin = async (req, res, next) => {
+const Permission = async (req, res, next) => {
     try {
         // const pathGroup = RouteGroupName(req.path)
         const token = await req.headers.authorization
@@ -38,5 +38,5 @@ const Admin = async (req, res, next) => {
 
 
 module.exports = {
-    Admin
+    Permission
 }
