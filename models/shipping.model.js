@@ -97,6 +97,10 @@ const shippingSchema = new Schema({
         type: Schema.Types.ObjectId,
         default: null
     }],
+    product_items:[{
+        type: Schema.Types.ObjectId,
+        default: null
+    }],
     created_by: {
         type: Schema.Types.ObjectId,
         required: true

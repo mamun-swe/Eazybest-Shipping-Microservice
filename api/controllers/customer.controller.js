@@ -1,5 +1,6 @@
 
 const _ = require("lodash")
+const axios = require("axios")
 const District = require("../../models/district.model")
 const Shipping = require("../../models/shipping.model")
 const validator = require("../validators/shipping.validator")
@@ -28,6 +29,7 @@ const districtList = async (req, res, next) => {
 /* Match shipping */
 const matchShipping = async (req, res, next) => {
     try {
+        const { id } = req.user
         const { post_code, items } = req.body
 
         /* Validate check */
@@ -53,44 +55,33 @@ const matchShipping = async (req, res, next) => {
             /* Check valid mongoose Id */
             await isMongooseId(element.product_id)
 
-            let query = {}
-
-            if (element.assign_to === "Brand") {
-                query = { brands: { $in: [element.product_id] } }
+            const formData = {
+                type: "Product",
+                items: [element.product_id]
             }
 
-            if (element.assign_to === "Category") {
-                query = { categories: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Sub-category") {
-                query = { sub_categories: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Leaf-category") {
-                query = { leaf_categories: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Vendor") {
-                query = { vendors: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Product") {
-                query = { products: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Customer") {
-                query = { customers: { $in: [element.product_id] } }
-            }
-
-            if (element.assign_to === "Anything") {
-                query = { assign_to: "Anything" }
+            const communicatorResponse = await axios.post(process.env.MODEL_COMMUNICATOR, formData)
+            if (!communicatorResponse && !communicatorResponse.status === 200) {
+                return res.status(404).json({
+                    status: false,
+                    message: "Product not available."
+                })
             }
 
             /* find shipping info */
             const shipping_info = await Shipping.findOne({
                 $and: [
-                    { ...query },
+                    {
+                        $or: [
+                            { brands: { $in: [communicatorResponse.data.data[0].brand] } },
+                            { categories: { $in: [communicatorResponse.data.data[0].mainCategory] } },
+                            { sub_categories: { $in: [communicatorResponse.data.data[0].subCategory] } },
+                            { leaf_categories: { $in: [communicatorResponse.data.data[0].leafCategory] } },
+                            { vendors: { $in: [communicatorResponse.data.data[0].vendor] } },
+                            { products: { $in: [communicatorResponse.data.data[0]._id] } },
+                            { customers: { $in: [id] } },
+                        ]
+                    },
                     { "min_quantity": { "$lte": parseInt(element.quantity) } },
                     { "max_quantity": { "$gte": parseInt(element.quantity) } },
                     { "min_order_amount": { "$lte": parseInt(element.total_amount) } },

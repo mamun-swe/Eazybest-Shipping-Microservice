@@ -15,7 +15,6 @@ const store = data => {
     if (data.discount_type && !['Flat', 'Percentage'].find(item => item === data.discount_type)) error.discount_type = `${data.discount_type} is not valid`
 
     if (!data.discount_amount || isEmpty(data.discount_amount)) error.discount_amount = "Discount amount is required"
-    if (data.discount_amount && typeof data.discount_amount !== "number") error.discount_amount = "Amount must be in number"
     if (!data.area || isEmpty(data.area)) error.area = "Area is required."
 
     if (!data.min_order_amount || isEmpty(data.min_order_amount)) error.min_order_amount = "Minimum order amount is required."
@@ -60,21 +59,21 @@ const match = data => {
             const element = data.items[i]
             let item_error = {}
 
-            if (element && !element.assign_to || isEmpty(element.assign_to)) item_error.assign_to = "Assign to is required."
-            if (element.assign_to) {
-                const assign_types = [
-                    'Anything',
-                    'Brand',
-                    'Category',
-                    'Sub-category',
-                    'Leaf-category',
-                    'Vendor',
-                    'Product',
-                    'Customer'
-                ].find(item => item === element.assign_to)
+            // if (element && !element.assign_to || isEmpty(element.assign_to)) item_error.assign_to = "Assign to is required."
+            // if (element.assign_to) {
+            //     const assign_types = [
+            //         'Anything',
+            //         'Brand',
+            //         'Category',
+            //         'Sub-category',
+            //         'Leaf-category',
+            //         'Vendor',
+            //         'Product',
+            //         'Customer'
+            //     ].find(item => item === element.assign_to)
 
-                if (!assign_types) item_error.assign_to = `${element.assign_to} is not valid`
-            }
+            //     if (!assign_types) item_error.assign_to = `${element.assign_to} is not valid`
+            // }
 
             if (element && !element.product_id || isEmpty(element.product_id)) item_error.product_id = "Product Id is required."
             if (element && !element.quantity || isEmpty(element.quantity)) item_error.quantity = "Quantity is required."

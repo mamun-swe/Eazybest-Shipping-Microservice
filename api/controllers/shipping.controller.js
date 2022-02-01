@@ -1,4 +1,5 @@
 
+const axios = require("axios")
 const Shipping = require("../../models/shipping.model")
 const validator = require("../validators/shipping.validator")
 const { RedisClient } = require("../cache")
@@ -97,23 +98,17 @@ const Store = async (req, res, next) => {
             })
         }
 
-        if (assign_items && assign_items.length > 0) {
-            for (let i = 0; i < assign_items.length; i++) {
-                await isMongooseId(assign_items[i])
-            }
-        }
-
         // Assign items with assigned field
         let assignedItems = {}
 
         if (assign_to === "Anything") assignedItems = null
-        if (assign_to === "Brand") assignedItems.brands = assign_items
-        if (assign_to === "Category") assignedItems.categories = assign_items
-        if (assign_to === "Sub-category") assignedItems.sub_categories = assign_items
-        if (assign_to === "Leaf-category") assignedItems.leaf_categories = assign_items
-        if (assign_to === "Vendor") assignedItems.vendors = assign_items
-        if (assign_to === "Product") assignedItems.products = assign_items
-        if (assign_to === "Customer") assignedItems.customers = assign_items
+        if (assign_to === "Brand") assignedItems.brands = JSON.parse(assign_items)
+        if (assign_to === "Category") assignedItems.categories = JSON.parse(assign_items)
+        if (assign_to === "Sub-category") assignedItems.sub_categories = JSON.parse(assign_items)
+        if (assign_to === "Leaf-category") assignedItems.leaf_categories = JSON.parse(assign_items)
+        if (assign_to === "Vendor") assignedItems.vendors = JSON.parse(assign_items)
+        if (assign_to === "Product") assignedItems.products = JSON.parse(assign_items)
+        if (assign_to === "Customer") assignedItems.customers = JSON.parse(assign_items)
 
         const newShipping = new Shipping({
             title,
@@ -150,7 +145,7 @@ const Store = async (req, res, next) => {
 const Show = async (req, res, next) => {
     try {
         let item = {}
-        let assigned_items = {}
+        let assigned_items = []
         const { id } = req.params
         await isMongooseId(id)
 
@@ -167,6 +162,11 @@ const Show = async (req, res, next) => {
 
         if (result) {
 
+            const startHour = new Date(result.start_time).getHours()
+            const startMinute = new Date(result.start_time).getMinutes()
+            const endHour = new Date(result.end_time).getHours()
+            const endMinute = new Date(result.end_time).getMinutes()
+
             // Assigned items 
             if (result.assign_to === "Anything") assigned_items = null
             if (result.assign_to === "Brand") assigned_items = result.brands
@@ -177,14 +177,26 @@ const Show = async (req, res, next) => {
             if (result.assign_to === "Product") assigned_items = result.products
             if (result.assign_to === "Customer") assigned_items = result.customers
 
+            /* fetch items data from communicator */
+            let assign_items_data = []
+            const formData = {
+                type: result.assign_to,
+                items: assigned_items
+            }
+
+            const communicatorResponse = await axios.post(process.env.MODEL_COMMUNICATOR, formData)
+            if (communicatorResponse && communicatorResponse.status === 200) {
+                assign_items_data = communicatorResponse.data.data
+            }
+
             item._id = result._id
             item.title = result.title
             item.assign_to = result.assign_to
-            item.assigned_items = assigned_items
+            item.assign_items = assign_items_data
             item.start_from = result.start_from
             item.end_to = result.end_to
-            item.start_time = result.start_time
-            item.end_time = result.end_time
+            item.start_time = startHour + ":" + startMinute
+            item.end_time = endHour + ":" + endMinute
             item.discount_type = result.discount_type
             item.discount_amount = result.discount_amount
             item.min_order_amount = result.min_order_amount
@@ -202,7 +214,10 @@ const Show = async (req, res, next) => {
             data: item
         })
     } catch (error) {
-        if (error) next(error)
+        if (error) {
+            console.log(error)
+            next(error)
+        }
     }
 }
 
@@ -264,13 +279,13 @@ const Update = async (req, res, next) => {
         }
 
         if (assign_to === "Anything") new_items = new_items
-        if (assign_to === "Brand") new_items.brands = assign_items
-        if (assign_to === "Category") new_items.categories = assign_items
-        if (assign_to === "Sub-category") new_items.sub_categories = assign_items
-        if (assign_to === "Leaf-category") new_items.leaf_categories = assign_items
-        if (assign_to === "Vendor") new_items.vendors = assign_items
-        if (assign_to === "Product") new_items.products = assign_items
-        if (assign_to === "Customer") new_items.customers = assign_items
+        if (assign_to === "Brand") new_items.brands = JSON.parse(assign_items)
+        if (assign_to === "Category") new_items.categories = JSON.parse(assign_items)
+        if (assign_to === "Sub-category") new_items.sub_categories = JSON.parse(assign_items)
+        if (assign_to === "Leaf-category") new_items.leaf_categories = JSON.parse(assign_items)
+        if (assign_to === "Vendor") new_items.vendors = JSON.parse(assign_items)
+        if (assign_to === "Product") new_items.products = JSON.parse(assign_items)
+        if (assign_to === "Customer") new_items.customers = JSON.parse(assign_items)
 
         const is_available = await Shipping.findById(id)
         if (!is_available) {
@@ -306,7 +321,10 @@ const Update = async (req, res, next) => {
             message: 'Successfully shipping updated.'
         })
     } catch (error) {
-        if (error) next(error)
+        if (error) {
+            console.log(error)
+            next(error)
+        }
     }
 }
 
