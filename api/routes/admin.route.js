@@ -1,6 +1,7 @@
 const express = require("express")
 const AdminRouter = express.Router()
 const AreaController = require("../controllers/area.controller")
+const DivisionController = require("../controllers/division.controller")
 const DistrictController = require("../controllers/district.controller")
 const ShippingController = require("../controllers/shipping.controller")
 
@@ -11,12 +12,19 @@ AdminRouter.get("/area/:id", AreaController.Show)
 AdminRouter.put("/area/:id", AreaController.Update)
 AdminRouter.delete("/area/:id", AreaController.Delete)
 
-// District routes
+// division routes
 AdminRouter.get("/district", DistrictController.Index)
 AdminRouter.post("/district", DistrictController.Store)
 AdminRouter.get("/district/:id", DistrictController.Show)
 AdminRouter.put("/district/:id", DistrictController.Update)
 AdminRouter.delete("/district/:id", DistrictController.Delete)
+
+// Division routes
+AdminRouter.get("/division", DivisionController.Index)
+AdminRouter.post("/division", DivisionController.Store)
+AdminRouter.get("/division/:id", DivisionController.Show)
+AdminRouter.put("/division/:id", DivisionController.Update)
+AdminRouter.delete("/division/:id", DivisionController.Delete)
 
 // Shipping routes
 AdminRouter.get("/shipping", ShippingController.Index)

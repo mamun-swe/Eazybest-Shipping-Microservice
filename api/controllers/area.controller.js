@@ -22,7 +22,7 @@ const Index = async (req, res, next) => {
 
         const totalItems = await Area.countDocuments().exec()
         const results = await Area.find({},
-            { district: 0, created_by: 0 }
+            { created_by: 0 }
         )
             .sort({ _id: -1 })
             .skip((parseInt(page) * parseInt(limit)) - parseInt(limit))
@@ -49,7 +49,8 @@ const Store = async (req, res, next) => {
             post_office,
             post_office_bn_name,
             post_code,
-            district
+            district,
+            division
         } = req.body
 
         // Validate check
@@ -62,6 +63,7 @@ const Store = async (req, res, next) => {
         }
 
         await isMongooseId(district)
+        await isMongooseId(division)
 
         // check exsting area
         const isExist = await Area.findOne({ post_code })
@@ -79,10 +81,11 @@ const Store = async (req, res, next) => {
             post_office_bn_name,
             post_code,
             district,
+            division,
             created_by
         })
 
-        await District.findByIdAndUpdate(district, { $push: { areas: newArea._id } })
+        // await District.findByIdAndUpdate(district, { $push: { areas: newArea._id } })
         await newArea.save()
         await RedisClient.flushdb()
 
@@ -110,7 +113,10 @@ const Show = async (req, res, next) => {
             data: result
         })
     } catch (error) {
-        if (error) next(error)
+        if (error){
+            console.log(error);
+            next(error)
+        }
     }
 }
 
@@ -124,7 +130,8 @@ const Update = async (req, res, next) => {
             post_office,
             post_office_bn_name,
             post_code,
-            district
+            district,
+            division
         } = req.body
 
         // Validate check
@@ -155,17 +162,17 @@ const Update = async (req, res, next) => {
         }
 
         // remove from district areas
-        const removeFromDistrict = await District.findByIdAndUpdate(
-            isAvailable.district,
-            { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
-        )
+        // const removeFromDistrict = await District.findByIdAndUpdate(
+        //     isAvailable.district,
+        //     { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
+        // )
 
-        if (!removeFromDistrict) {
-            return res.status(500).json({
-                status: false,
-                message: "Something going wrong."
-            })
-        }
+        // if (!removeFromDistrict) {
+        //     return res.status(500).json({
+        //         status: false,
+        //         message: "Something going wrong."
+        //     })
+        // }
 
         await Area.findByIdAndUpdate(id,
             {
@@ -175,7 +182,8 @@ const Update = async (req, res, next) => {
                     post_office,
                     post_office_bn_name,
                     post_code,
-                    district
+                    district,
+                    division
                 }
             },
             { new: true }
@@ -190,7 +198,10 @@ const Update = async (req, res, next) => {
             message: "Successfully area updated."
         })
     } catch (error) {
-        if (error) next(error)
+        if (error){
+            console.log(error);
+            next(error)
+        }
     }
 }
 
@@ -210,10 +221,10 @@ const Delete = async (req, res, next) => {
         }
 
         // Remove form district
-        await District.findByIdAndUpdate(
-            isAvailable.district,
-            { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
-        )
+        // await District.findByIdAndUpdate(
+        //     isAvailable.district,
+        //     { $pull: { "areas": { "$in": [new ObjectId(isAvailable._id)] } } },
+        // )
 
         await Area.findByIdAndDelete(id)
         await RedisClient.flushdb()

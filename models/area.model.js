@@ -31,6 +31,11 @@ const areaSchema = new Schema({
         ref: "District",
         required: true
     },
+    division: {
+        type: Schema.Types.ObjectId,
+        ref: "Division",
+        required: true
+    },
     created_by: {
         type: Schema.Types.ObjectId,
         required: true

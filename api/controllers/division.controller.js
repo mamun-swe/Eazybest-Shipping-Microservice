@@ -1,7 +1,8 @@
 
 const Area = require("../../models/area.model")
+const Division = require("../../models/division.model")
 const District = require("../../models/district.model")
-const Validator = require("../validators/district.validator")
+const Validator = require("../validators/division.validator")
 const { RedisClient } = require("../cache")
 const { isMongooseId } = require("../middleware/mongooseId.middleware")
 const { PaginateQueryParams, Paginate } = require("../helpers/paginate.helper")
@@ -21,8 +22,8 @@ const Index = async (req, res, next) => {
             })
         }
 
-        const totalItems = await District.countDocuments().exec()
-        const results = await District.find({}, { created_by: 0 })
+        const totalItems = await Division.countDocuments().exec()
+        const results = await Division.find({}, { created_by: 0 })
             .sort({ _id: -1 })
             .skip((parseInt(page) * parseInt(limit)) - parseInt(limit))
             .limit(parseInt(limit))
@@ -35,7 +36,6 @@ const Index = async (req, res, next) => {
                     _id: element._id,
                     name: element.name,
                     bn_name: element.bn_name,
-                    division: element.division
                     // is_deleteable: element.areas.length > 0 ? false : true
                 })
             }
@@ -47,7 +47,7 @@ const Index = async (req, res, next) => {
             pagination: Paginate({ page, limit, totalItems })
         })
     } catch (error) {
-        if (error){
+        if (error) {
             console.log(error);
             next(error)
         }
@@ -58,8 +58,8 @@ const Index = async (req, res, next) => {
 const Store = async (req, res, next) => {
     try {
         const created_by = req.user.id
-        const { name, bn_name, division } = req.body
-        console.log(req.body);
+        const { name, bn_name } = req.body
+
         // Validate check
         const validate = await Validator.Store(req.body)
         if (!validate.isValid) {
@@ -70,7 +70,7 @@ const Store = async (req, res, next) => {
         }
 
         // check exsting area
-        const isExist = await District.findOne({ name })
+        const isExist = await Division.findOne({ name })
         if (isExist) {
             return res.status(409).json({
                 status: false,
@@ -78,26 +78,21 @@ const Store = async (req, res, next) => {
             })
         }
 
-        const newDistrict = new District({
+        const newDivision = new Division({
             name,
             bn_name,
-            division:division,
             created_by
         })
 
-        console.log(newDistrict, 'neq dis');
-        await newDistrict.save()
+        await newDivision.save()
         await RedisClient.flushdb()
 
         res.status(201).json({
             status: true,
-            message: 'Successfully district created.'
+            message: 'Successfully division created.'
         })
     } catch (error) {
-        if (error){
-            console.log(error);
-            next(error)
-        }
+        if (error) next(error)
     }
 }
 
@@ -107,7 +102,7 @@ const Show = async (req, res, next) => {
         const { id } = req.params
 
         await isMongooseId(id)
-        const result = await District.findById(id)
+        const result = await Division.findById(id)
             // .populate("areas", "upazila upazila_bn_name post_office post_office_bn_name post_code")
             .exec()
 
@@ -116,10 +111,7 @@ const Show = async (req, res, next) => {
             data: result
         })
     } catch (error) {
-        if (error){
-            console.log(error);
-            next(error)
-        }
+        if (error) next(error)
     }
 }
 
@@ -143,15 +135,15 @@ const Update = async (req, res, next) => {
             })
         }
 
-        const isAvailable = await District.findById(id)
+        const isAvailable = await Division.findById(id)
         if (!isAvailable) {
             return res.status(404).json({
                 status: false,
-                message: "District not available."
+                message: "Division not available."
             })
         }
 
-        await District.findByIdAndUpdate(id,
+        await Division.findByIdAndUpdate(id,
             { $set: { name, bn_name } },
             { new: true }
         )
@@ -159,7 +151,7 @@ const Update = async (req, res, next) => {
 
         res.status(200).json({
             status: true,
-            message: "Successfully district updated."
+            message: "Successfully division updated."
         })
     } catch (error) {
         if (error) next(error)
@@ -173,28 +165,29 @@ const Delete = async (req, res, next) => {
 
         await isMongooseId(id)
 
-        const isAvailable = await District.findById(id)
+        const isAvailable = await Division.findById(id)
         if (!isAvailable) {
             return res.status(404).json({
                 status: false,
-                message: "District not available."
+                message: "Division not available."
             })
         }
 
         // if (isAvailable.areas.length > 0) {
         //     return res.status(403).json({
         //         status: false,
-        //         message: "District not deleteable, some area already available."
+        //         message: "Division not deleteable, some area already available."
         //     })
         // }
 
-        await Area.findOneAndDelete({ district: id })
-        await District.findByIdAndDelete(id)
+        await Area.findOneAndDelete({ division: id })
+        await District.findOneAndDelete({ division: id })
+        await Division.findByIdAndDelete(id)
         await RedisClient.flushdb()
 
         res.status(200).json({
             status: true,
-            message: "Successfully district deleted."
+            message: "Successfully division deleted."
         })
     } catch (error) {
         if (error){
@@ -210,7 +203,7 @@ const Search = async (query) => {
         const items = []
 
         const queryValue = new RegExp(query, 'i')
-        const results = await District.find(
+        const results = await Division.find(
             {
                 $or: [
                     { name: queryValue },

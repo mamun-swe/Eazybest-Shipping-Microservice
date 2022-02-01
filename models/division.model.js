@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose")
 
-const districtSchema = new Schema({
+const divisionSchema = new Schema({
     name: {
         type: String,
         trim: true,
@@ -11,11 +11,11 @@ const districtSchema = new Schema({
         trim: true,
         required: true
     },
-    division: {
-        type: Schema.Types.ObjectId,
-        ref: "Division",
-        default: null
-    },
+    // areas: [{
+    //     type: Schema.Types.ObjectId,
+    //     ref: "Area",
+    //     default: null
+    // }],
     created_by: {
         type: Schema.Types.ObjectId,
         required: true
@@ -25,5 +25,5 @@ const districtSchema = new Schema({
 })
 
 
-const District = model("District", districtSchema)
+const District = model("Division", divisionSchema)
 module.exports = District
