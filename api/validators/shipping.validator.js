@@ -17,10 +17,10 @@ const store = data => {
     if (!data.discount_amount || isEmpty(data.discount_amount)) error.discount_amount = "Discount amount is required"
     if (!data.area || isEmpty(data.area)) error.area = "Area is required."
 
-    if (!data.min_order_amount || isEmpty(data.min_order_amount)) error.min_order_amount = "Minimum order amount is required."
-    if (!data.max_order_amount || isEmpty(data.max_order_amount)) error.max_order_amount = "Maximum order amount is required."
-    if (!data.min_quantity || isEmpty(data.min_quantity)) error.min_quantity = "Minimum product quantity is required."
-    if (!data.max_quantity || isEmpty(data.max_quantity)) error.max_quantity = "Maximum product quantity is required."
+    // if (!data.min_order_amount || isEmpty(data.min_order_amount)) error.min_order_amount = "Minimum order amount is required."
+    // if (!data.max_order_amount || isEmpty(data.max_order_amount)) error.max_order_amount = "Maximum order amount is required."
+    // if (!data.min_quantity || isEmpty(data.min_quantity)) error.min_quantity = "Minimum product quantity is required."
+    // if (!data.max_quantity || isEmpty(data.max_quantity)) error.max_quantity = "Maximum product quantity is required."
 
     if (!data.assign_to || isEmpty(data.assign_to)) error.assign_to = "Assign to is required"
     if (data.assign_to) {

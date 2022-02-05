@@ -13,7 +13,7 @@ const Index = async (req, res, next) => {
         const { limit, page } = PaginateQueryParams(req.query)
 
         if (query) {
-            const searchResults = await Search(query)
+            const searchResults = await Search(JSON.parse(req.query.query).query, JSON.parse(req.query.query).district)
             return res.status(200).json({
                 status: true,
                 data: searchResults
@@ -23,7 +23,8 @@ const Index = async (req, res, next) => {
         const totalItems = await Area.countDocuments().exec()
         const results = await Area.find({},
             { created_by: 0 }
-        )
+        ).populate('division')
+            .populate('district')
             .sort({ _id: -1 })
             .skip((parseInt(page) * parseInt(limit)) - parseInt(limit))
             .limit(parseInt(limit))
@@ -106,6 +107,7 @@ const Show = async (req, res, next) => {
         await isMongooseId(id)
         const result = await Area.findById(id)
             .populate("district", "name bn_name")
+            .populate("division", "name bn_name")
             .exec()
 
         res.status(200).json({
@@ -113,7 +115,7 @@ const Show = async (req, res, next) => {
             data: result
         })
     } catch (error) {
-        if (error){
+        if (error) {
             console.log(error);
             next(error)
         }
@@ -198,7 +200,7 @@ const Update = async (req, res, next) => {
             message: "Successfully area updated."
         })
     } catch (error) {
-        if (error){
+        if (error) {
             console.log(error);
             next(error)
         }
@@ -238,9 +240,32 @@ const Delete = async (req, res, next) => {
     }
 }
 
-// Search items
-const Search = async (query) => {
+const getAreaByDistrict = async (req, res, next) => {
     try {
+
+        let items = req.body.items, data
+
+        data = await Area.find({ district: { $in: [...items] } })
+            .populate('district')
+            .populate('division')
+
+        res.status(200).json({
+            status: true,
+            data: data,
+        })
+    } catch (error) {
+        if (error) {
+            console.log(error);
+            next(error)
+        }
+    }
+}
+
+
+// Search items
+const Search = async (query, district) => {
+    try {
+        let items = []
         const queryValue = new RegExp(query, 'i')
         const results = await Area.find(
             {
@@ -252,12 +277,34 @@ const Search = async (query) => {
                     { post_code: queryValue }
                 ]
             },
-            { district: 0, created_by: 0 }
+            { created_by: 0 }
         )
-            .sort({ _id: -1 })
+            // .sort({ _id: -1 })
             .exec()
 
-        return results
+        if (results && results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i]
+                console.log(element);
+                district.map(v => {
+                    if (element.district == v) {
+                        items.push({
+                            _id:element._id,
+                            upazila: element.upazila,
+                            upazila_bn_name: element.upazila_bn_name,
+                            post_office: element.post_office,
+                            post_office_bn_name: element.post_office_bn_name,
+                            post_code: element.post_code,
+                            district: element.district,
+                            division:element.district
+                            // is_deleteable: element.areas.length > 0 ? false : true
+                        })
+                    }
+                })
+            }
+        }
+
+        return items
     } catch (error) {
         if (error) return []
     }
@@ -269,5 +316,6 @@ module.exports = {
     Store,
     Show,
     Update,
+    getAreaByDistrict,
     Delete
 }

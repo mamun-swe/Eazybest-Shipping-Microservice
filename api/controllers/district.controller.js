@@ -12,9 +12,11 @@ const Index = async (req, res, next) => {
         const items = []
         const { query } = req.query
         const { limit, page } = PaginateQueryParams(req.query)
+        // console.log(req.query);
+        // console.log('**', JSON.parse(req.query.query).query, '**', JSON.parse(req.query.query).division);
 
         if (query) {
-            const searchResults = await Search(query)
+            const searchResults = await Search( JSON.parse(req.query.query).query,  JSON.parse(req.query.query).division)
             return res.status(200).json({
                 status: true,
                 data: searchResults
@@ -23,6 +25,7 @@ const Index = async (req, res, next) => {
 
         const totalItems = await District.countDocuments().exec()
         const results = await District.find({}, { created_by: 0 })
+            .populate('division', { name:1, bn_name:1})
             .sort({ _id: -1 })
             .skip((parseInt(page) * parseInt(limit)) - parseInt(limit))
             .limit(parseInt(limit))
@@ -108,6 +111,7 @@ const Show = async (req, res, next) => {
 
         await isMongooseId(id)
         const result = await District.findById(id)
+        .populate('division', { name:1, bn_name:1})
             // .populate("areas", "upazila upazila_bn_name post_office post_office_bn_name post_code")
             .exec()
 
@@ -129,7 +133,8 @@ const Update = async (req, res, next) => {
         const { id } = req.params
         const {
             name,
-            bn_name
+            bn_name,
+            division
         } = req.body
 
         await isMongooseId(id)
@@ -152,7 +157,7 @@ const Update = async (req, res, next) => {
         }
 
         await District.findByIdAndUpdate(id,
-            { $set: { name, bn_name } },
+            { $set: { name, bn_name, division } },
             { new: true }
         )
         await RedisClient.flushdb()
@@ -204,17 +209,39 @@ const Delete = async (req, res, next) => {
     }
 }
 
-// Search items
-const Search = async (query) => {
-    try {
-        const items = []
+//get district by division id
 
+const getDistrictByDivision = async (req, res, next) => {
+    try {
+
+        let items = req.body.items, data
+
+        data = await District.find( { division: { $in: [ ...items ] } } )
+        .populate('division')
+
+        res.status(200).json({
+            status: true,
+            data: data,
+        })
+    } catch (error) {
+        if (error){
+            console.log(error);
+            next(error)
+        }
+    }
+}
+
+// Search items
+const Search = async (query, division) => {
+    try {
+        console.log(typeof(query), typeof(division), '***');
+        const items = []
         const queryValue = new RegExp(query, 'i')
         const results = await District.find(
             {
                 $or: [
                     { name: queryValue },
-                    { bn_name: queryValue }
+                    { bn_name: queryValue },
                 ]
             },
             { created_by: 0 }
@@ -225,11 +252,19 @@ const Search = async (query) => {
         if (results && results.length > 0) {
             for (let i = 0; i < results.length; i++) {
                 const element = results[i]
-                items.push({
-                    _id: element._id,
-                    name: element.name,
-                    bn_name: element.bn_name,
-                    is_deleteable: element.areas.length > 0 ? false : true
+                console.log(element, '**element')
+                division.map(v=>{
+                    console.log(v, '88');
+                    if( element.division == v){
+                        console.log("Yes matching");
+                        items.push({
+                            _id: element._id,
+                            name: element.name,
+                            bn_name: element.bn_name,
+                            division: element.division
+                            // is_deleteable: element.areas.length > 0 ? false : true
+                        })
+                    }
                 })
             }
         }
@@ -245,5 +280,6 @@ module.exports = {
     Store,
     Show,
     Update,
-    Delete
+    Delete,
+    getDistrictByDivision
 }

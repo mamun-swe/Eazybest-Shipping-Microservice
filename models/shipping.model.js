@@ -46,29 +46,33 @@ const shippingSchema = new Schema({
     },
     min_order_amount: {
         type: Number,
-        trim: true,
-        required: true
+        trim: true
     },
     max_order_amount: {
         type: Number,
-        trim: true,
-        required: true
+        trim: true
     },
     min_quantity: {
         type: Number,
-        trim: true,
-        required: true
+        trim: true
     },
     max_quantity: {
         type: Number,
-        trim: true,
-        required: true
+        trim: true
     },
-    area: {
+    division:[{
+        type: Schema.Types.ObjectId,
+        ref: "Division"
+    }],
+    district:[{
+        type: Schema.Types.ObjectId,
+        ref: "District"
+    }],
+    area:[{
         type: Schema.Types.ObjectId,
         ref: "Area",
         required: true
-    },
+    }],
     brands: [{
         type: Schema.Types.ObjectId,
         default: null

@@ -222,7 +222,7 @@ const Search = async (query) => {
                     _id: element._id,
                     name: element.name,
                     bn_name: element.bn_name,
-                    is_deleteable: element.areas.length > 0 ? false : true
+                    // is_deleteable: element.areas.length > 0 ? false : true
                 })
             }
         }

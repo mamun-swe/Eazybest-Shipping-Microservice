@@ -33,9 +33,12 @@ const Index = async (req, res, next) => {
                 end_to: 1,
                 start_time: 1,
                 end_time: 1,
-                discount_type: 1
+                discount_type: 1,
             }
         )
+            .populate('division')
+            .populate('district')
+            .populate('area')
             .sort({ _id: -1 })
             .skip((parseInt(page) * parseInt(limit)) - parseInt(limit))
             .limit(parseInt(limit))
@@ -45,6 +48,40 @@ const Index = async (req, res, next) => {
             status: true,
             data: results,
             pagination: Paginate({ page, limit, totalItems })
+        })
+    } catch (error) {
+        if (error) next(error)
+    }
+}
+
+function addHours(date, hours) {
+    const newDate = new Date(date);
+    newDate.setHours(newDate.getHours() + hours);
+    return newDate;
+}
+
+const AllShippingInRange = async (req, res, next) => {
+    try {
+        const results = await Shipping.find({})
+        .populate('division')
+        .populate('district')
+        .populate('area')
+
+        let newDate = new Date()
+        let newdate = addHours(newDate, 6)
+        let data = []
+        results.map(v => {
+            // console.log(v.start_from,'startfrom', v.start_time,'start time', v.end_to, 'endTo', v.end_time,'endtime');
+            let genDate = new Date(v.start_from.getFullYear(), v.start_from.getMonth(), v.start_from.getDate(), v.start_time.getHours(), v.start_time.getMinutes(), 0, 0)
+            let genDate2 = new Date(v.end_to.getFullYear(), v.end_to.getMonth(), v.end_to.getDate(), v.end_time.getHours(), v.end_time.getMinutes(), 0, 0)
+            // console.log(genDate, genDate2, newdate, '***');
+            if (newdate >= genDate && newdate <= genDate2) {
+                data.push(v)
+            }
+        })
+        res.status(200).json({
+            status: true,
+            data: data,
         })
     } catch (error) {
         if (error) next(error)
@@ -69,6 +106,8 @@ const Store = async (req, res, next) => {
             min_quantity,
             max_quantity,
             area,
+            district,
+            division,
             assign_items
         } = req.body
 
@@ -124,6 +163,8 @@ const Store = async (req, res, next) => {
             min_quantity,
             max_quantity,
             area,
+            district,
+            division,
             created_by,
             ...assignedItems
         })
@@ -137,7 +178,10 @@ const Store = async (req, res, next) => {
             message: 'Successfully shipping created.'
         })
     } catch (error) {
-        if (error) next(error)
+        if (error) {
+            console.log(error);
+            next(error)
+        }
     }
 }
 
@@ -158,6 +202,8 @@ const Show = async (req, res, next) => {
                     select: "name bn_name"
                 }
             })
+            .populate('district')
+            .populate('division')
             .exec()
 
         if (result) {
@@ -204,6 +250,8 @@ const Show = async (req, res, next) => {
             item.min_quantity = result.min_quantity
             item.max_quantity = result.max_quantity
             item.area = result.area
+            item.district = result.district
+            item.division = result.division
             item.created_by = result.created_by
             item.created_at = FormatDateWithAMPM(result.createdAt)
             item.updated_at = FormatDateWithAMPM(result.updatedAt)
@@ -239,6 +287,8 @@ const Update = async (req, res, next) => {
             min_quantity,
             max_quantity,
             area,
+            district,
+            division,
             assign_items
         } = req.body
 
@@ -311,6 +361,8 @@ const Update = async (req, res, next) => {
                 min_quantity,
                 max_quantity,
                 area,
+                district,
+                division,
                 ...new_items
             }
         }).exec()
@@ -418,6 +470,7 @@ const FilterByQueryParams = async (queryParams) => {
 
 module.exports = {
     Index,
+    AllShippingInRange,
     Store,
     Show,
     Update,
